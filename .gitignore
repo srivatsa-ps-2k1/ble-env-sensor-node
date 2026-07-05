@@ -1,0 +1,20 @@
+# Build artifacts
+firmware/ports/native/esn-sim
+*.o
+*.elf
+*.bin
+*.map
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Test outputs
+test/report.html
+test/assets/
+
+# KiCad
+*-backups/
+*.kicad_prl
+fp-info-cache
