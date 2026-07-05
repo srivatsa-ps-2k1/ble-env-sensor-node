@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build simulator & run CLI test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build native simulator
+        working-directory: firmware/ports/native
+        run: make
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-html
+
+      - name: Run test suite against simulator
+        working-directory: test
+        run: pytest -v --html=report.html --self-contained-html
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: test/report.html
+
+  # Cross-compilation job: proves the core builds for ARM Cortex-M.
+  # Extend this once the CubeIDE project for the STM32WB55 target exists.
+  build-arm:
+    name: Cross-compile core for Cortex-M4
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
+
+      - name: Compile core objects for Cortex-M4
+        run: |
+          arm-none-eabi-gcc -c -Wall -Wextra -Werror -std=c11 \
+            -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
+            -Ifirmware/core/include \
+            firmware/core/src/cli.c -o cli.o
+          arm-none-eabi-size cli.o
